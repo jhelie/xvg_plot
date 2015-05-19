@@ -30,11 +30,12 @@ This script simply plots the content of an xvg file.
 Option	      Default  	Description                    
 -----------------------------------------------------
 -f			: xvg file for energy evolution
+-o			: output file
 --comments	@,#	: lines starting with these characters will be considered as comment
---ymax			: upper boundary of energy axis (be careful to enter a number consistent with the energy unit chosen!)
---ymin			: lower boundary of energy axis (be careful to enter a number consistent with the energy unit chosen!)
---xmax			: lower boundary of time axis (be careful to enter a number consistent with the time unit chosen!)
---xmin			: lower boundary of time axis (be careful to enter a number consistent with the time unit chosen!)
+--ymax			: upper boundary of y axis
+--ymin			: lower boundary of y axis
+--xmax			: lower boundary of x axis
+--xmin			: lower boundary of x axis
 --nbx			: nb ticks on x axis
 --nby			: nb ticks on y axis
 --prod			: produce a png image of just the plot without any whitespace (no axis, ticks, labels,...)
@@ -48,16 +49,13 @@ Other options
 
 #options
 parser.add_argument('-f', nargs=1, dest='xvgfilename', help=argparse.SUPPRESS, required=True)
-parser.add_argument('--ymax', nargs=1, dest='ymax', default=[-1], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--ymin', nargs=1, dest='ymin', default=[-1], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--tmax', nargs=1, dest='tmax', default=[-1], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--tmin', nargs=1, dest='tmin', default=[-1], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--nbx', nargs=1, dest='nbx', default=[6], type=int, help=argparse.SUPPRESS)
-parser.add_argument('--nby', nargs=1, dest='nby', default=[7], type=int, help=argparse.SUPPRESS)
-parser.add_argument('--preset', dest='preset', action='store_true', help=argparse.SUPPRESS)
-parser.add_argument('--prod', dest='prod', action='store_true', help=argparse.SUPPRESS)
-parser.add_argument('--line', dest='line', action='store_true', help=argparse.SUPPRESS)
-parser.add_argument('--thick', dest='thick', action='store_true', help=argparse.SUPPRESS)
+parser.add_argument('-o', nargs=1, dest='output_file', default=["auto"], help=argparse.SUPPRESS)
+parser.add_argument('--ymax', nargs=1, dest='ymax', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--ymin', nargs=1, dest='ymin', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--xmax', nargs=1, dest='xmax', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--xmin', nargs=1, dest='xmin', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--nbx', nargs=1, dest='nbx', default=[-1], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--nby', nargs=1, dest='nby', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -69,22 +67,17 @@ parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
 #=========================================================================================
 
 args = parser.parse_args()
-args.energy_xvgfilename = args.energy_xvgfilename[0]
-args.status_xvgfilename = args.status_xvgfilename[0]
-args.ref_xvgfilename = args.ref_xvgfilename[0]
+args.xvgfilename = args.xvgfilename[0]
 args.output_file = args.output_file[0]
 args.ymax = args.ymax[0]
 args.ymin = args.ymin[0]
-args.tmax = args.tmax[0]
-args.tmin = args.tmin[0]
+args.xmax = args.xmax[0]
+args.xmin = args.xmin[0]
 args.nbx = args.nbx[0]
 args.nby = args.nby[0]
 args.comments = args.comments[0].split(',')
-
-if args.kT != "no":
-	kT_temp = float(args.kT)
-	global kT_factor
-	kT_factor = kT_temp * 1.3806488 * 6.0221412 / float(1000)
+if args.output_file == "auto":
+	args.output_file = args.xvgfilename[:-4] + '.svg'
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -121,311 +114,88 @@ except:
 # sanity check
 #=======================================================================
 
-if not os.path.isfile(args.energy_xvgfilename):
-	print "Error: file " + str(args.energy_xvgfilename) + " not found."
+if not os.path.isfile(args.xvgfilename):
+	print "Error: file " + str(args.xvgfilename) + " not found."
 	sys.exit(1)
 
-if args.status_xvgfilename != "no" and not os.path.isfile(args.status_xvgfilename):
-	print "Error: file " + str(args.status_xvgfilename) + " not found."
+if os.path.isfile(args.output_file):
+	print "Error: file " + str(args.output_file) + " already exists, specify a different name via -o."
 	sys.exit(1)
-
-if args.ref_xvgfilename != "no" and not os.path.isfile(args.status_xvgfilename):
-	print "Error: file " + str(args.ref_xvgfilename) + " not found."
-	sys.exit(1)
-
-
-##########################################################################################
-# FUNCTIONS DEFINITIONS
-##########################################################################################
-
-#=========================================================================================
-# data loading
-#=========================================================================================
-
-def load_xvg():															#DONE
-	
-	global y_min
-	global y_max
-	global times
-	global data_energy_avg
-	global data_energy_max
-	global data_energy_min
-	global data_energy_ref
-	global data_status
-	global nb_cols
-	
-	#energy
-	#------
-	#get file content
-	print " -reading energy file... "
-	filename = args.energy_xvgfilename
-	with open(filename) as f:
-		lines = f.readlines()
-	
-	#determine legends and nb of lines to skip
-	tmp_nb_rows_to_skip = 0
-	for l_index in range(0,len(lines)):		
-		line = lines[l_index]
-		if line[0] in args.comments:
-			tmp_nb_rows_to_skip += 1
-		
-	#get data
-	tmp_data = np.loadtxt(filename, skiprows = tmp_nb_rows_to_skip)
-	tmp_data = tmp_data[1:,:]		#remove first line
-	nb_rows = np.shape(tmp_data)[0]
-	nb_cols = np.shape(tmp_data)[1]
-	if nb_cols > 3:
-		print "Error: more than 3 columns detected in file " + str(filename)
-		sys.exit(1)
-	
-	#store time
-	times = np.zeros((nb_rows,1))
-	times[:,0] = tmp_data[:,0]/float(1000)
-
-	#store energy
-	data_energy_avg = np.zeros((nb_rows,1))
-	data_energy_avg[:,0] = tmp_data[:,1]
-	if nb_cols > 2:
-		data_energy_max = np.zeros((nb_rows,1))
-		data_energy_min = np.zeros((nb_rows,1))
-		data_energy_max[:,0] = data_energy_avg[:,0] + tmp_data[:,2]
-		data_energy_min[:,0] = data_energy_avg[:,0] - tmp_data[:,2]
-	
-	#reference file
-	#--------------
-	if args.ref_xvgfilename != "no":
-		#get file content
-		print " -reading reference file... "
-		filename = args.ref_xvgfilename
-		with open(filename) as f:
-			lines = f.readlines()
-		
-		#determine legends and nb of lines to skip
-		tmp_nb_rows_to_skip = 0
-		for l_index in range(0,len(lines)):		
-			line = lines[l_index]
-			if line[0] in args.comments:
-				tmp_nb_rows_to_skip += 1
-			
-		#get data
-		tmp_data = np.loadtxt(filename, skiprows = tmp_nb_rows_to_skip)
-		tmp_data = tmp_data[1:,:]		#remove first line
-			
-		#store energy
-		data_energy_ref = np.zeros((np.shape(tmp_data)[0],1))
-		data_energy_ref[:,0] = tmp_data[:,1]
-		tmp_offset = data_energy_ref[0,0]
-		data_energy_ref[:,0] -= tmp_offset
-
-	#status
-	#------
-	if args.status_xvgfilename != "no":
-		#get file content
-		print " -reading conformation status file..."
-		filename = args.status_xvgfilename
-		with open(filename) as f:
-			lines = f.readlines()
-		
-		#determine legends and nb of lines to skip
-		tmp_nb_rows_to_skip = 0
-		for l_index in range(0,len(lines)):
-			line = lines[l_index]
-			if line[0] in args.comments:
-				tmp_nb_rows_to_skip += 1
-		
-		#get data
-		tmp_data = np.loadtxt(filename, skiprows = tmp_nb_rows_to_skip)
-		tmp_data = tmp_data[1:,:]		#remove first line
-		if np.shape(tmp_data)[0] != nb_rows:
-			print "Error: file " + str(filename) + " has " + str(np.shape(tmp_data)[0]) + " data rows, whereas file " + str(args.energy_xvgfilename) + " has " + str(nb_rows) + " data rows."
-			sys.exit(1)
-		if np.shape(tmp_data)[1] > 2:
-			print "Warning: more than 2 columns detected in file " + str(filename) + ", only the first 2 will be taken into account."
-			
-		if not np.array_equal(tmp_data[:,0],times[:,0]):
-			print "\nError: the first column of file " + str(filename) + " is different than that of " + str(args.energy_xvgfilename) + "."
-			sys.exit(1)
-		
-		#store data
-		data_status = np.zeros((nb_rows,1))
-		data_status[:,0] = tmp_data[:,1]
-	else:
-		data_status = np.ones((nb_rows,1))	
-	
-	#post-processing
-	#---------------
-	#switch to kT
-	if args.kT != "no":
-		data_energy_avg[:,0] /= float(kT_factor)
-		if nb_cols > 2:
-			data_energy_max[:,0] /= float(kT_factor)
-			data_energy_min[:,0] /= float(kT_factor)
-		if args.ref_xvgfilename != "no":
-			data_energy_ref[:,0] /= float(kT_factor)
-	
-	#switch to microseconds
-	if args.micro:
-		times[:,0] = times[:,0]/float(1000)
-	
-	#shift data down so that Epot = 0 at t = 0
-	tmp_offset = data_energy_avg[0,0]
-	data_energy_avg[:,0] -= tmp_offset
-	y_max = np.max(data_energy_avg[:,0])
-	if nb_cols > 2:
-		data_energy_max[:,0] -= tmp_offset
-		data_energy_min[:,0] -= tmp_offset
-		y_max = np.max(data_energy_max[:,0])
-		y_min = 1.1*np.min(data_energy_min[:,0])
-	
-	if args.ymax != -1:
-		y_max = args.ymax
-	if args.ymin != -1:
-		y_min = args.ymin
-	else:
-		if nb_cols > 2:
-			y_min = 1.1*np.min(data_energy_min[:,0])
-		else:
-			y_min = 1.1*np.min(data_energy_avg[:,0])
-	
-	return
-
-#=========================================================================================
-# outputs
-#=========================================================================================
-
-
-def graph_xvg():
-	
-	print " -plotting data..."
-	
-	#create line collections
-	if args.preset:
-		# Create a colormap for red, green and blue and a norm to color
-		# f' < -0.5 red, f' > 0.5 blue, and the rest green
-		
-		#  - 0: surfacic
-		#  - 1: TM
-		#  - 2: TM*
-		#  - 3: U-shape
-
-		status = [0,1,2,3]
-		labels = ['interfacial','TM','TM*','U-shape']
-		colours = ['b','y','g','m']
-		cmap = mcolors.ListedColormap(colours)
-		norm = mcolors.BoundaryNorm([-0.5, 0.5, 1.5, 2.5, 3.5], cmap.N)
-	else:
-
-		#min / max
-		#status_min = int(np.min(data_status[:,0]))
-		#status_max = int(np.max(data_status[:,0]))
-		status_min = 1
-		status_max = 9
-		
-		#labels
-		labels = []
-		for c_size in range(status_min, status_max+1):
-			labels.append(str(c_size))
-
-		#boundaries (assumes everyone is > 0)
-		tmp_boundaries = np.arange(status_min-1, status_max+1)
-		tmp_boundaries = tmp_boundaries + 0.5
-		
-		#colours
-		colours = []
-		tmp_cmap = cm.get_cmap('jet')
-		colours_sizes_value = tmp_cmap(np.linspace(0, status_min, status_max-status_min+1))
-		for c_index in range(0, status_max-status_min+1):
-			colours.append(colours_sizes_value[c_index])
-		cmap = mcolors.ListedColormap(colours)
-		norm = mcolors.BoundaryNorm(tmp_boundaries, cmap.N)
-			
-	points = np.array([times[:,0],data_energy_avg[:,0]]).T.reshape(-1,1,2)
-	segments = np.concatenate([points[:-1], points[1:]], axis=1)	
-	lc = LineCollection(segments, cmap = cmap, norm = norm)
-	lc.set_array(data_status[:,0])
-	if args.thick:
-		lc.set_linewidth(4)
-	else:
-		lc.set_linewidth(3)
-		
-	#open files
-	filename_svg = os.getcwd() + '/' + str(args.output_file) + '.svg'
-	filename_png = os.getcwd() + '/' + str(args.output_file) + '.png'
-	
-	#create figure
-	fig = plt.figure(figsize=(8, 6.2))
-	if not args.prod:
-		fig.suptitle("System potential energy")
-		
-	#axis boundaries
-	ax = plt.gca()
-	tmp_tmax = times[:,0].max()
-	tmp_tmin = times[:,0].min()
-	if args.tmax != -1:
-		tmp_tmax = args.tmax
-	if args.tmin != -1:
-		tmp_tmin = args.tmin
-	ax.set_xlim(tmp_tmin, tmp_tmax)
-	ax.set_ylim(y_min, y_max)
-	if args.line:
-		plt.hlines(0, tmp_tmin, tmp_tmax, linestyle = "dashed", alpha = 0.7)
-	
-	#plot data
-	if args.ref_xvgfilename != "no":
-		plt.plot(times[:len(data_energy_ref[:,0]),0], data_energy_ref[:,0], color = "#262626", linewidth = 2, alpha = 0.7)
-	ax.add_collection(lc)
-	if nb_cols > 2:
-		plt.fill_between(times[:,0], data_energy_min[:,0], data_energy_max[:,0], color = "#262626", edgecolor = "#262626", linewidth = 0, alpha = 0.2)		
-
-	#axis labeling
-	if args.prod:
-		plt.axis('off')
-		plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-	else:
-		if args.micro:
-			plt.xlabel('time (us)')	
-		else:
-			plt.xlabel('time (ns)')
-		if args.kT != "no":
-			plt.ylabel('relative potential energy (kT at T = ' + str(kT_temp) + ' K)')
-		else:
-			plt.ylabel('relative potential energy (kJ.mol-1)')	
-		ax.spines['top'].set_visible(False)
-		ax.spines['right'].set_visible(False)
-		ax.xaxis.set_ticks_position('bottom')
-		ax.yaxis.set_ticks_position('left')
-		ax.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx))
-		ax.yaxis.set_major_locator(MaxNLocator(nbins=args.nby))
-		#ax.xaxis.labelpad = 20
-		ax.yaxis.labelpad = 20
-		ax.get_xaxis().set_tick_params(direction='out')
-		ax.get_yaxis().set_tick_params(direction='out')
-		plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
-		plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
-
-
-	#save fig
-	if args.prod:
-		fig.savefig(filename_png, transparent = True, dpi = 500)
-	else:
-		fig.savefig(filename_svg, transparent = True)
-	plt.close()
-
-	return
 
 ##########################################################################################
 # MAIN
 ##########################################################################################
 
-load_xvg()
-graph_xvg()
+#get file content
+with open(args.xvgfilename) as f:
+	lines = f.readlines()
+
+#determine legends and nb of lines to skip
+x_label = "x axis"
+y_label = "y axis"
+fig_title = ""
+c_index = 1
+c_labels = {}
+tmp_nb_rows_to_skip = 0
+for l_index in range(0,len(lines)):		
+	line = lines[l_index]
+	if line[0] in args.comments:
+		tmp_nb_rows_to_skip += 1
+		#retrieve title
+		if "@ title" in line:
+			fig_title = line.split("@ title \"")[-1][:-2]
+		#retrieve x axis label
+		if "@ xaxis label" in line:
+			x_label = line.split("@ xaxis label \"")[-1][:-2]
+		#retrieve y axis label
+		if "@ yaxis label" in line:
+			y_label = line.split("@ yaxis label \"")[-1][:-2]
+		#retrieve captions
+		if "legend \"" in line:
+			c_labels[c_index] = line.split("legend \"")[-1][:-2]
+			c_index += 1
+
+#get data
+data = np.loadtxt(args.xvgfilename, skiprows = tmp_nb_rows_to_skip)
+
+#create figure
+fig, ax = plt.subplots()
+fig.suptitle(fig_title)
+	
+#plot data
+for c_index in range(1, np.shape(data)[1]):
+	plt.plot(data[:,0], data[:,c_index], label = c_labels[c_index])
+
+#format axes and legend
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.xaxis.set_ticks_position('bottom')
+ax.yaxis.set_ticks_position('left')
+if args.xmax != -10000000:
+	ax_heatmap.set_xlim(xmax=args.xmax)
+if args.xmin != -10000000:
+	ax_heatmap.set_xlim(xmin=args.xmin)
+if args.ymax != -10000000:
+	ax_heatmap.set_ylim(ymax=args.ymax)
+if args.ymin != -10000000:
+	ax_heatmap.set_ylim(ymin=args.ymin)
+if args.nbx != -1:
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx))
+if args.nby != -1:
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.nby))
+plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+fontP.set_size("small")
+ax.legend(prop=fontP)
+plt.xlabel(x_label, fontsize="small")
+plt.ylabel(y_label, fontsize="small")
+fig.savefig(args.output_file)
+plt.close()
+
 
 #=========================================================================================
 # exit
 #=========================================================================================
-if args.prod:
-	print "\nFinished successfully! Check result in file '" + str(args.output_file) + ".png'."
-else:
-	print "\nFinished successfully! Check result in file '" + str(args.output_file) + ".svg'."
+print "\nFinished successfully! Check result in file '" + str(args.output_file) + ".svg'."
 print ""
 sys.exit(0)
