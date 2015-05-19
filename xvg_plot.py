@@ -196,6 +196,6 @@ plt.close()
 #=========================================================================================
 # exit
 #=========================================================================================
-print "\nFinished successfully! Check result in file '" + str(args.output_file) + ".svg'."
+print "\nFinished successfully! Check result in file '" + str(args.output_file)
 print ""
 sys.exit(0)
