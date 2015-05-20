@@ -190,7 +190,6 @@ if args.nby != -1:
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.nby))
 if args.vline != -10000000:
 	ymin, ymax = ax.get_ylim()
-	print ymin, ymax
 	plt.vlines(args.vline, ymin, ymax, linestyles = 'dashed')
 if args.hline != -10000000:
 	xmin, xmax = ax.get_xlim()
