@@ -38,8 +38,8 @@ Option	      Default  	Description
 --xmin			: lower boundary of x axis
 --nbx			: nb ticks on x axis
 --nby			: nb ticks on y axis
---hline			: plot an horizontal line at this y value
---vline			: plot a vertical line at this x value
+--hline			: plot an horizontal line at this y value (use commas to specify several values)
+--vline			: plot a vertical line at this x value (use commas to specify several values)
 
 Other options
 -----------------------------------------------------
@@ -57,8 +57,8 @@ parser.add_argument('--xmax', nargs=1, dest='xmax', default=[-10000000], type=fl
 parser.add_argument('--xmin', nargs=1, dest='xmin', default=[-10000000], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--nbx', nargs=1, dest='nbx', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--nby', nargs=1, dest='nby', default=[-1], type=int, help=argparse.SUPPRESS)
-parser.add_argument('--hline', nargs=1, dest='hline', default=[-10000000], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--vline', nargs=1, dest='vline', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--hline', nargs=1, dest='hline', default=[-10000000], help=argparse.SUPPRESS)
+parser.add_argument('--vline', nargs=1, dest='vline', default=[-10000000], help=argparse.SUPPRESS)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -127,6 +127,18 @@ if os.path.isfile(args.output_file):
 	print "Error: file " + str(args.output_file) + " already exists, specify a different name via -o."
 	sys.exit(1)
 
+try:
+	args.hline = [float(args.hline)]
+except:
+	tmp_values = args.hline.split(',')
+	args.hline = [float(h) for h in tmp_values]
+
+try:
+	args.vline = [float(args.vline)]
+except:
+	tmp_values = args.vline.split(',')
+	args.vline = [float(v) for v in tmp_values]
+
 ##########################################################################################
 # MAIN
 ##########################################################################################
@@ -188,12 +200,14 @@ if args.nbx != -1:
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx))
 if args.nby != -1:
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.nby))
-if args.vline != -10000000:
+if args.vline != [-10000000]:
 	ymin, ymax = ax.get_ylim()
-	plt.vlines(args.vline, ymin, ymax, linestyles = 'dashed')
-if args.hline != -10000000:
+	for v in args.vline:
+		plt.vlines(v, ymin, ymax, linestyles = 'dashed')
+if args.hline != [-10000000]:
 	xmin, xmax = ax.get_xlim()
-	plt.hlines(args.hline, xmin, xmax, linestyles = 'dashed')
+	for h in args.hline:
+		plt.hlines(h, xmin, xmax, linestyles = 'dashed')
 
 plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
 plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
