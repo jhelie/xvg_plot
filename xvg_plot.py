@@ -38,7 +38,8 @@ Option	      Default  	Description
 --xmin			: lower boundary of x axis
 --nbx			: nb ticks on x axis
 --nby			: nb ticks on y axis
---prod			: produce a png image of just the plot without any whitespace (no axis, ticks, labels,...)
+--hline			: plot an horizontal line at this y value
+--vline			: plot a vertical line at this x value
 
 Other options
 -----------------------------------------------------
@@ -56,6 +57,8 @@ parser.add_argument('--xmax', nargs=1, dest='xmax', default=[-10000000], type=fl
 parser.add_argument('--xmin', nargs=1, dest='xmin', default=[-10000000], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--nbx', nargs=1, dest='nbx', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--nby', nargs=1, dest='nby', default=[-1], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--hline', nargs=1, dest='hline', default=[-10000000], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--vline', nargs=1, dest='vline', default=[-10000000], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -75,6 +78,8 @@ args.xmax = args.xmax[0]
 args.xmin = args.xmin[0]
 args.nbx = args.nbx[0]
 args.nby = args.nby[0]
+args.hline = args.hline[0]
+args.vline = args.vline[0]
 args.comments = args.comments[0].split(',')
 if args.output_file == "auto":
 	args.output_file = args.xvgfilename[:-4] + '.svg'
@@ -183,6 +188,14 @@ if args.nbx != -1:
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx))
 if args.nby != -1:
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.nby))
+if args.vline != -10000000:
+	ymin, ymax = ax.get_ylim()
+	print ymin, ymax
+	plt.vlines(args.vline, ymin, ymax, linestyles = 'dashed')
+if args.hline != -10000000:
+	xmin, xmax = ax.get_xlim()
+	plt.hlines(args.hline, xmin, xmax, linestyles = 'dashed')
+
 plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
 plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
 fontP.set_size("small")
@@ -196,6 +209,6 @@ plt.close()
 #=========================================================================================
 # exit
 #=========================================================================================
-print "\nFinished successfully! Check result in file '" + str(args.output_file)
+print "\nFinished successfully! Check result in file " + str(args.output_file)
 print ""
 sys.exit(0)
