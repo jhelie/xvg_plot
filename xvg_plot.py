@@ -172,13 +172,13 @@ ax.spines['right'].set_visible(False)
 ax.xaxis.set_ticks_position('bottom')
 ax.yaxis.set_ticks_position('left')
 if args.xmax != -10000000:
-	ax_heatmap.set_xlim(xmax=args.xmax)
+	ax.set_xlim(xmax=args.xmax)
 if args.xmin != -10000000:
-	ax_heatmap.set_xlim(xmin=args.xmin)
+	ax.set_xlim(xmin=args.xmin)
 if args.ymax != -10000000:
-	ax_heatmap.set_ylim(ymax=args.ymax)
+	ax.set_ylim(ymax=args.ymax)
 if args.ymin != -10000000:
-	ax_heatmap.set_ylim(ymin=args.ymin)
+	ax.set_ylim(ymin=args.ymin)
 if args.nbx != -1:
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx))
 if args.nby != -1:
