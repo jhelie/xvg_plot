@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.1"
+version_nb = "0.0.2"
 parser = argparse.ArgumentParser(prog = 'xvg_plot', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
 **********************************************
@@ -23,7 +23,9 @@ git: https://github.com/jhelie/xvg_plot
 
 [ DESCRIPTION ]
 
-This script simply plots the content of an xvg file.
+This script simply plots the content of an xvg file. In case the --std flag is used
+there must an even number of data column (the second half of columns is assumed to contain
+std values for the first half).
 
 [ USAGE ]
 
@@ -40,6 +42,7 @@ Option	      Default  	Description
 --nby			: nb ticks on y axis
 --hline			: plot an horizontal line at this y value (use commas to specify several values)
 --vline			: plot a vertical line at this x value (use commas to specify several values)
+--std			: if xvg contains std data plot it as area around average values
 
 Other options
 -----------------------------------------------------
@@ -59,6 +62,7 @@ parser.add_argument('--nbx', nargs=1, dest='nbx', default=[-1], type=int, help=a
 parser.add_argument('--nby', nargs=1, dest='nby', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--hline', nargs=1, dest='hline', default=[-10000000], help=argparse.SUPPRESS)
 parser.add_argument('--vline', nargs=1, dest='vline', default=[-10000000], help=argparse.SUPPRESS)
+parser.add_argument('--std', dest='std', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -179,9 +183,20 @@ data = np.loadtxt(args.xvgfilename, skiprows = tmp_nb_rows_to_skip)
 fig, ax = plt.subplots()
 fig.suptitle(fig_title)
 	
+#get number of data columns
+nb_col_data = int(np.shape(data)[1] - 1)
+if args.std and nb_col_data % 2 != 0:
+	print "Error: --std specified but " + str(args.xvgfilename) + " contains an odd number of data column, see xvg_plot -h"
+	sys.exit(1)
+
 #plot data
-for c_index in range(1, np.shape(data)[1]):
-	plt.plot(data[:,0], data[:,c_index], label = c_labels[c_index])
+if args.std:
+	for c_index in range(1, int(nb_col_data/float(2) + 1)):
+		base_line, = plt.plot(data[:,0], data[:,c_index], label = c_labels[c_index])
+		plt.fill_between(data[:,0], data[:,c_index] - data[:,c_index + int(nb_col_data/float(2))], data[:,c_index] + data[:,c_index + int(nb_col_data/float(2))], color = base_line.get_color(), edgecolor = base_line.get_color(), linewidth = 0, alpha = 0.2)
+else:
+	for c_index in range(1, np.shape(data)[1]):
+		plt.plot(data[:,0], data[:,c_index], label = c_labels[c_index])
 
 #format axes and legend
 ax.spines['top'].set_visible(False)
