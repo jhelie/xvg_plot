@@ -51,12 +51,9 @@ Option	      Default  	Description
 2nd axis parameters
 -----------------------------------------------------
 --col2		: indices of columns to plot on second axis (format: i,j,...)
---nbx2			: nb ticks on x axis
 --nby2			: nb ticks on y axis
 --ymax2			: upper boundary of y axis
 --ymin2			: lower boundary of y axis
---xmax2			: lower boundary of x axis
---xmin2			: lower boundary of x axis
 
 Other options
 -----------------------------------------------------
@@ -78,12 +75,9 @@ parser.add_argument('--hline', nargs=1, dest='hline', default=[-10000000], help=
 parser.add_argument('--vline', nargs=1, dest='vline', default=[-10000000], help=argparse.SUPPRESS)
 parser.add_argument('--std', dest='std', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--col2', nargs=1, dest='col2', default=['none'], help=argparse.SUPPRESS)
+parser.add_argument('--nby2', nargs=1, dest='nby2', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--ymax2', nargs=1, dest='ymax2', default=[-10000000], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--ymin2', nargs=1, dest='ymin2', default=[-10000000], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--xmax2', nargs=1, dest='xmax2', default=[-10000000], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--xmin2', nargs=1, dest='xmin2', default=[-10000000], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--nbx2', nargs=1, dest='nbx2', default=[-1], type=int, help=argparse.SUPPRESS)
-parser.add_argument('--nby2', nargs=1, dest='nby2', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -107,12 +101,9 @@ args.hline = args.hline[0]
 args.vline = args.vline[0]
 
 args.col2 = args.col2[0]
+args.nby2 = args.nby2[0]
 args.ymax2 = args.ymax2[0]
 args.ymin2 = args.ymin2[0]
-args.xmax2 = args.xmax2[0]
-args.xmin2 = args.xmin2[0]
-args.nbx2 = args.nbx2[0]
-args.nby2 = args.nby2[0]
 
 args.comments = args.comments[0].split(',')
 if args.output_file == "auto":
@@ -297,16 +288,10 @@ if args.col2 != "none":
 	ax2.spines['top'].set_visible(False)
 	ax2.spines['left'].set_visible(False)
 	ax2.yaxis.set_ticks_position('right')
-	if args.xmax2 != -10000000:
-		ax2.set_xlim(xmax=args.xmax2)
-	if args.xmin2 != -10000000:
-		ax2.set_xlim(xmin=args.xmin2)
 	if args.ymax2 != -10000000:
 		ax2.set_ylim(ymax=args.ymax2)
 	if args.ymin2 != -10000000:
 		ax2.set_ylim(ymin=args.ymin2)
-	if args.nbx2 != -1:
-		ax2.xaxis.set_major_locator(MaxNLocator(nbins=args.nbx2))
 	if args.nby2 != -1:
 		ax2.yaxis.set_major_locator(MaxNLocator(nbins=args.nby2))
 	plt.setp(ax2.yaxis.get_majorticklabels(), fontsize="small", weight = "bold")
