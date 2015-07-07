@@ -242,8 +242,9 @@ if args.std:
 		ax1.fill_between(data[:,0], data[:,c_index] - data[:,c_index + int(nb_col_data/float(2))], data[:,c_index] + data[:,c_index + int(nb_col_data/float(2))], color = base_line.get_color(), edgecolor = base_line.get_color(), linewidth = 0, alpha = 0.2)
 else:
 	for c_index in range(1, np.shape(data)[1]):
-		if c_index in col2_indices:
-			ax2.plot(data[:,0], data[:,c_index], label = c_labels[c_index], linewidth = 3)
+		if args.col2 != "none":
+			if c_index in col2_indices:
+				ax2.plot(data[:,0], data[:,c_index], label = c_labels[c_index], linewidth = 3)
 		else:
 			ax1.plot(data[:,0], data[:,c_index], label = c_labels[c_index])
 
