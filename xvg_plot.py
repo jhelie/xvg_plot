@@ -227,7 +227,8 @@ fig, ax1 = plt.subplots()
 fig.suptitle(fig_title)
 	
 #create secondary axis
-ax2 = ax1.twinx()
+if args.col2 != "none":
+	ax2 = ax1.twinx()
 
 #get number of data columns
 nb_col_data = int(np.shape(data)[1] - 1)
